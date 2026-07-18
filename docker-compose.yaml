@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lrn_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lrn_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8080:80"
+    env_file:
+      - .env
+    environment:
+      LRN_DB_URL: postgresql://postgres:postgres@db:5432/lrn_db
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

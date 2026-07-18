@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lrn — improvements</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #eef2f6;
+        --ink: #152033;
+        --muted: #5b6b7c;
+        --line: #1f6b8a;
+        --grid: rgba(21, 32, 51, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "DM Sans", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          linear-gradient(160deg, #d9e6f0 0%, transparent 45%),
+          linear-gradient(340deg, #e4ebe4 0%, transparent 40%),
+          var(--bg);
+      }
+
+      main {
+        width: min(920px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.5rem 0 3rem;
+      }
+
+      h1 {
+        margin: 0 0 0.35rem;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+      }
+
+      p {
+        margin: 0 0 0.75rem;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      .meta {
+        margin: 0 0 1.75rem;
+        color: var(--ink);
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .meta.hidden {
+        display: none;
+      }
+
+      .chart-wrap {
+        position: relative;
+        height: min(420px, 60vh);
+      }
+
+      .empty {
+        display: none;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      .empty.visible {
+        display: block;
+      }
+
+      .chart-wrap.hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>lrn</h1>
+      <p>
+        Score climb from the first sample, then higher improved average scores.
+      </p>
+      <p class="meta hidden" id="point-count"></p>
+      <p class="empty" id="empty">No scored samples yet.</p>
+      <div class="chart-wrap" id="chart-wrap">
+        <canvas id="chart"></canvas>
+      </div>
+    </main>
+    <script>
+      async function load() {
+        const empty = document.getElementById("empty");
+        const wrap = document.getElementById("chart-wrap");
+        const pointCount = document.getElementById("point-count");
+        const resp = await fetch("/dashboard/series");
+        if (!resp.ok) {
+          empty.textContent = "Failed to load series.";
+          empty.classList.add("visible");
+          wrap.classList.add("hidden");
+          return;
+        }
+        const { points } = await resp.json();
+        if (!points.length) {
+          empty.classList.add("visible");
+          wrap.classList.add("hidden");
+          return;
+        }
+
+        const n = points.length;
+        pointCount.textContent = `${n} point${n === 1 ? "" : "s"}`;
+        pointCount.classList.remove("hidden");
+
+        const labels = points.map((p) =>
+          new Date(p.created_at).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+        const values = points.map((p) => Number(p.value));
+
+        new Chart(document.getElementById("chart"), {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Score",
+                data: values,
+                borderColor: "#1f6b8a",
+                backgroundColor: "rgba(31, 107, 138, 0.12)",
+                fill: true,
+                tension: 0.25,
+                pointRadius: 4,
+                pointBackgroundColor: "#1f6b8a",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  afterLabel(ctx) {
+                    const p = points[ctx.dataIndex];
+                    const parts = [];
+                    if (p.improvement != null) {
+                      parts.push(`improvement: +${p.improvement}%`);
+                    }
+                    if (p.score != null) {
+                      parts.push(`score: ${p.score}`);
+                    }
+                    return parts;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                title: { display: true, text: "created_at" },
+                grid: { color: "rgba(28, 26, 22, 0.08)" },
+              },
+              y: {
+                min: 0,
+                max: 100,
+                title: { display: true, text: "score" },
+                grid: { color: "rgba(28, 26, 22, 0.08)" },
+              },
+            },
+          },
+        });
+      }
+
+      load();
+    </script>
+  </body>
+</html>

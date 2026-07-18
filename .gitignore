@@ -1,0 +1,9 @@
+.env
+__pycache__
+.ruff_cache
+.coverage
+.pytest_cache
+coverage.xml
+requirements*.txt
+.venv
+.project
