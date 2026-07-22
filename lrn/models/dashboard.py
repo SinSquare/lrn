@@ -7,17 +7,15 @@ from pydantic import BaseModel, Field
 
 
 class ImprovementPoint(BaseModel):
-    """One value on the positive score climb."""
+    """One score point with its improvement."""
 
     sample_id: int
     created_at: datetime
-    value: Decimal
-    score: int | None = None
+    score: Decimal
     improvement: Decimal | None = None
-    improved_average_score: Decimal | None = None
 
 
 class ImprovementSeriesResponse(BaseModel):
-    """Positive-only climb of improved average scores."""
+    """Series of improved average scores."""
 
     points: list[ImprovementPoint] = Field(default_factory=list)

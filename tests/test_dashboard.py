@@ -30,7 +30,7 @@ def _sample(
     )
 
 
-def test_build_series_uses_improved_average_as_value_and_includes_improvement():
+def test_build_series_uses_improved_average_as_score_and_includes_improvement():
     samples = [
         _sample(
             sample_id=1,
@@ -52,7 +52,7 @@ def test_build_series_uses_improved_average_as_value_and_includes_improvement():
     points = build_improvement_series(samples)
 
     assert [p.sample_id for p in points] == [1, 3]
-    assert [p.value for p in points] == [Decimal("55.00"), Decimal("70.00")]
+    assert [p.score for p in points] == [Decimal("55.00"), Decimal("70.00")]
     assert [p.improvement for p in points] == [Decimal("8.00"), Decimal("12.00")]
 
 
@@ -102,8 +102,10 @@ def test_dashboard_series_endpoint(client, db_session_maker):
     body = resp.json()
     # Only improvement > 0 rows (ids 2 and 4); id 1/3 filtered out.
     assert [p["sample_id"] for p in body["points"]] == [2, 4]
-    assert [p["value"] for p in body["points"]] == ["58.00", "72.00"]
+    assert [p["score"] for p in body["points"]] == ["58.00", "72.00"]
     assert [p["improvement"] for p in body["points"]] == ["10.00", "5.00"]
+    for p in body["points"]:
+        assert set(p) == {"sample_id", "created_at", "score", "improvement"}
 
 
 def test_dashboard_page_served(client):

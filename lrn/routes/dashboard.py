@@ -1,4 +1,4 @@
-"""GET /dashboard — simple improvement climb chart."""
+"""GET /dashboard — score climb with improvement."""
 
 from pathlib import Path
 from typing import Annotated
@@ -20,10 +20,7 @@ _STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 def build_improvement_series(
     samples: list[db_models.DBSample],
 ) -> list[ImprovementPoint]:
-    """Build series points from samples with improved averages.
-
-    Y value is improved_average_score; improvement is included for display.
-    """
+    """Build series points: y = improved_average_score (as score), plus improvement."""
     points: list[ImprovementPoint] = []
 
     for sample in samples:
@@ -34,10 +31,8 @@ def build_improvement_series(
             ImprovementPoint(
                 sample_id=sample.id,
                 created_at=sample.created_at,
-                value=sample.improved_average_score,
-                score=sample.score,
+                score=sample.improved_average_score,
                 improvement=sample.improvement,
-                improved_average_score=sample.improved_average_score,
             )
         )
 
@@ -58,7 +53,7 @@ async def dashboard_page() -> FileResponse:
 async def improvement_series(
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ) -> ImprovementSeriesResponse:
-    """Return the positive improvement climb over time."""
+    """Return positive-improvement samples ordered by created_at."""
     result = await db.exec(
         select(db_models.DBSample)
         .where(
